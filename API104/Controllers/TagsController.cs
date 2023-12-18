@@ -1,9 +1,6 @@
-﻿using API104.DAL;
-using API104.Entities;
-using Microsoft.AspNetCore.Http;
+﻿using API104.DTOs.Tag;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+
 
 namespace API104.Controllers
 {
@@ -11,53 +8,40 @@ namespace API104.Controllers
     [ApiController]
     public class TagsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ITagService _service;
 
-        public TagsController(AppDbContext context)
+        public TagsController(ITagService service)
         {
-            _context = context;
+            _service = service;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get(int page=1,int take=2)
+        public async Task<IActionResult> Get(int page = 1, int take = 2)
         {
-            List<Tag> tags=await _context.Tags.Skip((page-1)*take).Take(take).ToListAsync();
-            return StatusCode(StatusCodes.Status200OK,tags);
+            return Ok(await _service.GetAllAsync(page, take));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            if(id<=0) return StatusCode(StatusCodes.Status400BadRequest);
+            if (id <= 0) return StatusCode(StatusCodes.Status400BadRequest);
 
-            Tag? tag=await _context.Tags.FirstOrDefaultAsync(t=>t.Id == id);
-
-            if(tag is null) return StatusCode(StatusCodes.Status404NotFound);
-
-            return StatusCode(StatusCodes.Status200OK);
+            return Ok(await _service.GetAsync(id));
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Tag tag)
+        public async Task<IActionResult> CreateAsync([FromForm] CreateTagDto createTagDto)
         {
-            await _context.Tags.AddAsync(tag);
-            await _context.SaveChangesAsync();
-
+            await _service.CreateAsync(createTagDto);
             return StatusCode(StatusCodes.Status201Created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id,string name)
+        public async Task<IActionResult> Update(int id,UpdateTagDto updateTagDto)
         {
             if (id <= 0) return StatusCode(StatusCodes.Status400BadRequest);
 
-            Tag? tag = await _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
-
-            if (tag is null) return StatusCode(StatusCodes.Status404NotFound);
-
-            tag.Name = name;
-            await _context.SaveChangesAsync();
-
+            await _service.UpdateAsync(id, updateTagDto);
             return NoContent();
         }
 
@@ -66,13 +50,7 @@ namespace API104.Controllers
         {
             if (id <= 0) return StatusCode(StatusCodes.Status400BadRequest);
 
-            Tag? tag = await _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
-
-            if (tag is null) return StatusCode(StatusCodes.Status404NotFound);
-
-            _context.Tags.Remove(tag);
-            await _context.SaveChangesAsync();
-
+            await _service.DeleteAsync(id);
             return NoContent();
         }
     }

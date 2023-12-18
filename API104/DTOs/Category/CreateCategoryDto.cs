@@ -1,4 +1,4 @@
-﻿namespace API104.DTOs
+﻿namespace API104.DTOs.Category
 {
     public class CreateCategoryDto
     {
